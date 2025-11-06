@@ -1,0 +1,252 @@
+[build-system]
+requires = ["setuptools>=68.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "landeros-ironware"
+version = "1.0.0"
+description = "Institutional-grade iron condor scanner and manager for European-style index options"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Carlos Landeros", email = "carlos@landeros-financial.com"}
+]
+maintainers = [
+    {name = "Carlos Landeros", email = "carlos@landeros-financial.com"}
+]
+keywords = [
+    "options",
+    "trading",
+    "iron-condor",
+    "quantitative-finance",
+    "options-strategies",
+    "black-scholes",
+    "greeks",
+    "risk-management",
+    "backtesting",
+    "SPX",
+    "NDX",
+    "RUT",
+    "section-1256"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed"
+]
+
+dependencies = [
+    "numpy>=1.24.0,<2.0.0",
+    "scipy>=1.10.0,<2.0.0",
+    "pandas>=2.0.0,<3.0.0",
+    "matplotlib>=3.7.0,<4.0.0",
+    "seaborn>=0.12.0,<1.0.0",
+    "plotly>=5.14.0,<6.0.0",
+    "yfinance>=0.2.28",
+    "pandas-datareader>=0.10.0",
+    "requests>=2.31.0",
+    "python-dateutil>=2.8.2",
+    "pytz>=2023.3",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "toml>=0.10.2",
+    "tables>=3.8.0",
+    "pyarrow>=12.0.0",
+    "colorlog>=6.7.0",
+    "tqdm>=4.65.0",
+    "click>=8.1.0",
+    "rich>=13.5.0",
+    "tabulate>=0.9.0",
+    "statsmodels>=0.14.0",
+    "scikit-learn>=1.3.0",
+    "numba>=0.57.0",
+    "joblib>=1.3.0",
+    "pydantic>=2.0.0",
+    "py-vollib>=1.0.1",
+    "mibian>=0.1.3"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "hypothesis>=6.82.0",
+    "black>=23.7.0",
+    "flake8>=6.0.0",
+    "mypy>=1.4.0",
+    "isort>=5.12.0",
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0"
+]
+
+test = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "hypothesis>=6.82.0"
+]
+
+docs = [
+    "sphinx>=7.0.0",
+    "sphinx-rtd-theme>=1.3.0",
+    "sphinx-autodoc-typehints>=1.24.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/vip-carlos/landeros-financial-ironbird"
+Repository = "https://github.com/vip-carlos/landeros-financial-ironbird"
+Documentation = "https://github.com/vip-carlos/landeros-financial-ironbird#readme"
+"Bug Tracker" = "https://github.com/vip-carlos/landeros-financial-ironbird/issues"
+
+[project.scripts]
+landeros-ironware = "landeros_ironware.main:cli"
+ironware = "landeros_ironware.main:cli"
+
+[tool.setuptools]
+package-dir = {"" = "."}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["landeros_ironware*"]
+exclude = ["tests*", "docs*", "examples*"]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+skip_gitignore = true
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+strict_equality = true
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = [
+    "scipy.*",
+    "matplotlib.*",
+    "seaborn.*",
+    "plotly.*",
+    "yfinance.*",
+    "pandas_datareader.*",
+    "mibian.*",
+    "vollib.*"
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+    "--cov=landeros_ironware",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml"
+]
+testpaths = ["landeros_ironware/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests"
+]
+
+[tool.coverage.run]
+branch = true
+source = ["landeros_ironware"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@abc.abstractmethod"
+]
+precision = 2
+show_missing = true
+
+[tool.flake8]
+max-line-length = 100
+extend-ignore = ["E203", "E266", "E501", "W503"]
+max-complexity = 18
+select = ["B", "C", "E", "F", "W", "T4", "B9"]
+per-file-ignores = [
+    "__init__.py:F401"
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.per-file-ignores]
+"__init__.py" = ["F401"]
