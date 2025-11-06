@@ -482,16 +482,11 @@ class IronCondorScanner:
             logger.warning("No candidates found after assembly and validation.")
             return []
 
-        # The 'score' will be set by the optimizer (File #3)
-        # For now, we use a placeholder score.
-        # We will replace this call:
+        # Score candidates using the StrikeOptimizer
+        from landeros_ironware.strategies.optimizer import StrikeOptimizer
 
-        # from landeros_ironware.strategies.optimizer import score_candidate
-        for cand in candidates:
-            # Placeholder scoring
-            cand.score = (cand.pop * 0.5) + (cand.return_on_capital * 0.5)
-
-        candidates.sort(key=lambda x: x.score, reverse=True)
+        optimizer = StrikeOptimizer(self.settings)
+        candidates = optimizer.score_and_sort_candidates(candidates)
 
         logger.info(f"Scan complete. Found {len(candidates)} valid iron condors.")
         return candidates
