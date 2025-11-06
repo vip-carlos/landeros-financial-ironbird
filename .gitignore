@@ -205,3 +205,48 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Landeros Financial Ironware - Project Specific
+# Data files and market data cache
+*.csv
+*.xlsx
+*.xls
+*.parquet
+*.h5
+*.hdf5
+data/
+market_data/
+cache/
+output/
+logs/
+backtest_results/
+
+# API keys and credentials - NEVER COMMIT THESE
+*.key
+*.pem
+secrets.yaml
+secrets.json
+config.local.yaml
+.api_keys
+credentials.json
+
+# Trading platform connections
+*.ib
+*.td
+*.schwab
+
+# Generated reports and visualizations
+reports/
+plots/
+figures/
+*.png
+*.jpg
+*.pdf
+
+# Jupyter notebook outputs
+*.ipynb_checkpoints/
+
+# IDE specific for quant work
+.DS_Store
+.vscode/settings.json
+.idea/workspace.xml
