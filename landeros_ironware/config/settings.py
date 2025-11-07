@@ -121,7 +121,7 @@ class DataSourceConfig(BaseModel):
 
     model_config = ConfigDict(frozen=False, validate_assignment=True)
 
-    primary_source: Literal["yfinance", "cboe", "mock"] = Field(
+    primary_source: Literal["yfinance", "cboe", "mock", "ibkr"] = Field(
         default="yfinance",
         description="Primary data source for option chains",
     )

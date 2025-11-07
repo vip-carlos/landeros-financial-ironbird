@@ -1,16 +1,17 @@
 """
 Market data fetcher for option chains and underlying prices.
 
-Supports multiple data sources with caching for performance.
-Primarily uses yfinance for free market data access.
+Defines the abstract base class for all data fetchers
+and provides a default implementation for yfinance.
 
 Author: Carlos Landeros
 """
 
+import logging
+from abc import ABC, abstractmethod
 from typing import Optional, List, Dict, Any
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import logging
 import pandas as pd
 import numpy as np
 import yfinance as yf
@@ -123,32 +124,16 @@ class OptionChain:
         return sorted(list(strikes))
 
 
-class MarketDataFetcher:
+# --- NEW: Abstract Base Class ---
+class MarketDataFetcher(ABC):
     """
-    Market data fetcher with caching support.
+    Abstract interface for all market data fetchers.
 
-    Fetches option chains and underlying prices from various sources.
-    Implements caching to reduce API calls and improve performance.
+    This base class ensures that all fetchers (YFinance, IBKR, etc.)
+    implement the same core methods, enabling easy swapping of data sources.
     """
 
-    def __init__(self, config: Optional[DataSourceConfig] = None):
-        """
-        Initialize market data fetcher.
-
-        Args:
-            config: Data source configuration (default: from Settings)
-        """
-        if config is None:
-            settings = Settings()
-            config = settings.data_source
-
-        self.config = config
-        self.cache_enabled = config.use_cache
-        self.cache_dir = ensure_dir(config.cache_dir)
-        self.cache_ttl = timedelta(minutes=config.cache_ttl_minutes)
-
-        logger.info(f"Initialized MarketDataFetcher with source: {config.primary_source}")
-
+    @abstractmethod
     def get_underlying_price(self, symbol: str) -> float:
         """
         Get current underlying price.
@@ -162,6 +147,58 @@ class MarketDataFetcher:
         Raises:
             ValueError: If unable to fetch price
         """
+        pass
+
+    @abstractmethod
+    def get_option_chain(
+        self,
+        symbol: str,
+        expiration: Optional[datetime] = None,
+        dte_target: Optional[int] = None,
+    ) -> OptionChain:
+        """
+        Get option chain for specific expiration.
+
+        Args:
+            symbol: Underlying symbol
+            expiration: Specific expiration date (optional)
+            dte_target: Target DTE (finds closest expiration, optional)
+
+        Returns:
+            OptionChain: Complete option chain data
+
+        Raises:
+            ValueError: If unable to fetch option chain
+        """
+        pass
+
+
+# --- RENAMED: YFinance Implementation ---
+class YFinanceDataFetcher(MarketDataFetcher):
+    """
+    Market data fetcher using yfinance (Yahoo Finance API).
+
+    Implements caching to reduce API calls and improve performance.
+    This is a free data source suitable for development and backtesting.
+    """
+
+    def __init__(self, settings: Settings):
+        """
+        Initialize yfinance data fetcher.
+
+        Args:
+            settings: Application settings containing data source configuration
+        """
+        config = settings.data_source
+        self.config = config
+        self.cache_enabled = config.use_cache
+        self.cache_dir = ensure_dir(config.cache_dir)
+        self.cache_ttl = timedelta(minutes=config.cache_ttl_minutes)
+
+        logger.info(f"Initialized YFinanceDataFetcher with cache: {config.use_cache}")
+
+    def get_underlying_price(self, symbol: str) -> float:
+        """Get current underlying price from yfinance."""
         cache_key = f"price_{symbol}"
 
         # Check cache
@@ -201,11 +238,11 @@ class MarketDataFetcher:
             if self.cache_enabled:
                 self._save_to_cache(cache_key, price)
 
-            logger.info(f"Fetched price for {symbol}: ${price:.2f}")
+            logger.info(f"Fetched yfinance price for {symbol}: ${price:.2f}")
             return float(price)
 
         except Exception as e:
-            logger.error(f"Failed to fetch price for {symbol}: {e}")
+            logger.error(f"Failed to fetch yfinance price for {symbol}: {e}")
             raise ValueError(f"Unable to fetch price for {symbol}: {e}")
 
     def get_option_chain(
@@ -214,20 +251,7 @@ class MarketDataFetcher:
         expiration: Optional[datetime] = None,
         dte_target: Optional[int] = None,
     ) -> OptionChain:
-        """
-        Get option chain for specific expiration.
-
-        Args:
-            symbol: Underlying symbol
-            expiration: Specific expiration date (optional)
-            dte_target: Target DTE (finds closest expiration, optional)
-
-        Returns:
-            OptionChain: Complete option chain data
-
-        Raises:
-            ValueError: If unable to fetch option chain
-        """
+        """Get option chain from yfinance."""
         # Map index symbols to option-enabled tickers
         ticker_map = {
             "SPX": "^SPX",
@@ -294,14 +318,14 @@ class MarketDataFetcher:
             )
 
             logger.info(
-                f"Fetched option chain for {symbol} expiring {expiration.strftime('%Y-%m-%d')} "
+                f"Fetched yfinance option chain for {symbol} expiring {expiration.strftime('%Y-%m-%d')} "
                 f"({len(calls)} calls, {len(puts)} puts)"
             )
 
             return chain
 
         except Exception as e:
-            logger.error(f"Failed to fetch option chain for {symbol}: {e}")
+            logger.error(f"Failed to fetch yfinance option chain for {symbol}: {e}")
             # Return mock data as fallback
             return self._create_mock_option_chain(symbol)
 

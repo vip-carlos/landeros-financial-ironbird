@@ -18,7 +18,8 @@ import pandas as pd
 
 # Core dependencies from the project
 from landeros_ironware.config.settings import Settings
-from landeros_ironware.data.fetcher import MarketDataFetcher, OptionChain, OptionQuote
+from landeros_ironware.data.fetcher import MarketDataFetcher, YFinanceDataFetcher, OptionChain, OptionQuote
+from landeros_ironware.data.ibkr_fetcher import IBKRDataFetcher
 from landeros_ironware.greeks.black_scholes import GreeksCalculator, OptionGreeks
 from landeros_ironware.risk.probability import ProbabilityCalculator
 from landeros_ironware.utils.helpers import calculate_dte, safe_divide
@@ -354,7 +355,19 @@ class IronCondorScanner:
             settings: Configuration object
         """
         self.settings = settings
-        self.fetcher = MarketDataFetcher(settings.data_source)
+
+        # Dynamically choose the data fetcher based on configuration
+        if settings.data_source.primary_source.lower() == 'ibkr':
+            try:
+                self.fetcher = IBKRDataFetcher(settings)
+                logger.info("Using IBKRDataFetcher for market data.")
+            except Exception as e:
+                logger.error(f"Failed to initialize IBKRDataFetcher, falling back to yfinance. Error: {e}")
+                self.fetcher = YFinanceDataFetcher(settings)
+        else:
+            self.fetcher = YFinanceDataFetcher(settings)
+            logger.info("Using YFinanceDataFetcher for market data.")
+
         self.greeks_calc = GreeksCalculator(settings.risk_free_rate)
 
         # Initialize probability calculator with settings
