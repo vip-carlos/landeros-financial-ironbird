@@ -14,7 +14,6 @@ import json
 from pathlib import Path
 
 from landeros_ironware.config.settings import Settings
-from landeros_ironware.strategies.iron_condor import IronCondorPosition, PositionStatus, IronCondor
 
 logger = logging.getLogger(__name__)
 
@@ -78,6 +77,8 @@ class PortfolioManager:
             settings: Configuration object
             initial_capital: Starting capital for the portfolio
         """
+        from landeros_ironware.strategies.iron_condor import IronCondorPosition
+
         self.settings = settings
         self.initial_capital = initial_capital
         self.positions: List[IronCondorPosition] = []
@@ -96,7 +97,7 @@ class PortfolioManager:
             f"Positions: {len(self.positions)}"
         )
 
-    def add_position(self, position: IronCondorPosition) -> bool:
+    def add_position(self, position):
         """
         Add a position if it passes all risk rules.
 
@@ -112,6 +113,7 @@ class PortfolioManager:
         Returns:
             True if added successfully, False if rejected
         """
+        from landeros_ironware.strategies.iron_condor import IronCondorPosition, PositionStatus
         # Get max positions from settings (with fallback)
         max_positions = getattr(self.settings.risk_params, "max_positions", 10)
 
@@ -192,7 +194,7 @@ class PortfolioManager:
 
         return True
 
-    def remove_position(self, position: IronCondorPosition) -> bool:
+    def remove_position(self, position):
         """
         Remove a position from the portfolio.
 
@@ -202,6 +204,7 @@ class PortfolioManager:
         Returns:
             True if removed, False if not found
         """
+        from landeros_ironware.strategies.iron_condor import IronCondorPosition
         if position in self.positions:
             self.positions.remove(position)
             self.save_portfolio()
@@ -436,6 +439,8 @@ class PortfolioManager:
 
     def load_portfolio(self) -> None:
         """Load portfolio from JSON file."""
+        from landeros_ironware.strategies.iron_condor import IronCondor, IronCondorPosition, PositionStatus
+
         if not self.portfolio_path or not self.portfolio_path.exists():
             logger.debug("No portfolio file found to load")
             return

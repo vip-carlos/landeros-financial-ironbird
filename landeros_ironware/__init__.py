@@ -18,9 +18,8 @@ from landeros_ironware.config.settings import Settings
 from landeros_ironware.strategies.iron_condor import IronCondor, IronCondorScanner
 from landeros_ironware.greeks.black_scholes import GreeksCalculator, BlackScholes
 from landeros_ironware.risk.probability import ProbabilityCalculator
-from landeros_ironware.risk.portfolio import Portfolio, PortfolioManager
+from landeros_ironware.risk.portfolio import PortfolioManager, PortfolioMetrics
 from landeros_ironware.visuals.payoff import PayoffDiagram
-from landeros_ironware.backtest.engine import BacktestEngine, BacktestResults
 from landeros_ironware.data.fetcher import MarketDataFetcher
 
 __all__ = [
@@ -39,13 +38,10 @@ __all__ = [
     "BlackScholes",
     # Risk management
     "ProbabilityCalculator",
-    "Portfolio",
     "PortfolioManager",
+    "PortfolioMetrics",
     # Visualization
     "PayoffDiagram",
-    # Backtesting
-    "BacktestEngine",
-    "BacktestResults",
     # Data
     "MarketDataFetcher",
 ]

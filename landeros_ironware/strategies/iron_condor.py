@@ -357,14 +357,9 @@ class IronCondorScanner:
         self.fetcher = MarketDataFetcher(settings.data_source)
         self.greeks_calc = GreeksCalculator(settings.risk_free_rate)
 
-        # Prob calc is not finished, so we prepare to handle its failure
-        try:
-            self.prob_calc = ProbabilityCalculator()
-        except NotImplementedError:
-            self.prob_calc = None
-            logger.warning(
-                "ProbabilityCalculator not implemented. POP will be estimated."
-            )
+        # Initialize probability calculator with settings
+        self.prob_calc = ProbabilityCalculator(settings)
+        logger.info("ProbabilityCalculator initialized successfully.")
 
         logger.info(
             f"IronCondorScanner initialized for {settings.underlying} "
@@ -571,25 +566,18 @@ class IronCondorScanner:
         be_upper = sc.strike + total_credit
 
         # --- Probability of Profit (POP) ---
-        pop = 0.0
-        try:
-            if self.prob_calc:
-                pop = self.prob_calc.calculate_pop_lognormal(
-                    underlying_price=underlying_price,
-                    lower_strike=be_lower,
-                    upper_strike=be_upper,
-                    dte=chain.dte,
-                    # Use average IV of the short strikes
-                    iv=(sp.implied_volatility + sc.implied_volatility) / 2
-                )
-            else:
-                raise NotImplementedError("prob_calc is None")
-        except (NotImplementedError, AttributeError, TypeError):
-            # Fallback: Estimate POP based on short deltas
-            # POP approx 1 - (delta_put + delta_call)
-            pop = 1.0 - (abs(sp.delta) + abs(sc.delta))
-            # Clamp between 0 and 1
-            pop = max(0.0, min(1.0, pop))
+        # Use average IV of the short strikes
+        avg_iv = (sp.implied_volatility + sc.implied_volatility) / 2
+        if avg_iv < MIN_IV_THRESHOLD:
+            avg_iv = DEFAULT_IV # Use default if IV is bad
+
+        pop = self.prob_calc.calculate_pop_lognormal(
+            underlying_price=underlying_price,
+            lower_strike=be_lower,
+            upper_strike=be_upper,
+            dte=chain.dte,
+            iv=avg_iv
+        )
 
         # --- Store Leg Quotes ---
         leg_quotes = {

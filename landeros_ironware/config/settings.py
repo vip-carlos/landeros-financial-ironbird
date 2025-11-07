@@ -303,6 +303,12 @@ class Settings(BaseModel):
         description="Directory for output files and reports",
     )
 
+    # Broker configuration
+    ibkr_port: int = Field(
+        default=4001,
+        description="IBKR port (4001 for paper, 7496 for live TWS)",
+    )
+
     # Validators
     @field_validator("underlying")
     @classmethod

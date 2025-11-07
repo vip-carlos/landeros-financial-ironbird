@@ -394,6 +394,66 @@ def analyze(position: str, save_plot: Optional[str]) -> None:
 
 
 @cli.command()
+@click.option(
+    "--underlying",
+    "-u",
+    type=click.Choice(get_supported_underlyings(), case_sensitive=False),
+    default="SPX",
+    help="Index to trade (default: SPX)",
+)
+@click.option(
+    "--live",
+    is_flag=True,
+    help="Run in live trading mode (default: paper trading)",
+)
+@click.option(
+    "--port",
+    type=int,
+    default=None,
+    help="IBKR port (default: 4001 for paper, 7496 for live)",
+)
+def trade(underlying: str, live: bool, port: Optional[int]) -> None:
+    """
+    Run the automated trading bot (paper or live).
+
+    Connects to Interactive Brokers TWS/Gateway, scans for opportunities,
+    and manages the portfolio automatically.
+    """
+    import asyncio
+    from landeros_ironware.broker.ibkr_executor import IBKRBot
+
+    console.print(
+        Panel.fit(
+            f"[bold cyan]Landeros Ironware Bot Running[/bold cyan]\n"
+            f"Underlying: {underlying} | Mode: {'LIVE' if live else 'PAPER'}",
+            border_style="cyan",
+        )
+    )
+
+    if live:
+        console.print("[bold red]WARNING: LIVE TRADING MODE ENABLED[/bold red]")
+        if not click.confirm("Are you sure you want to proceed with live money?"):
+            console.print("[yellow]Live trading cancelled.[/yellow]")
+            sys.exit(0)
+
+    try:
+        # Create settings with the specified port
+        settings_kwargs = {"underlying": underlying.upper()}
+        if port:
+            settings_kwargs["ibkr_port"] = port
+
+        settings = Settings(**settings_kwargs)
+
+        bot = IBKRBot(settings, live=live)
+        asyncio.run(bot.run())
+
+    except Exception as e:
+        console.print(f"[bold red]Bot Error:[/bold red] {str(e)}")
+        logger.exception("Bot failed")
+        sys.exit(1)
+
+
+@cli.command()
 def info() -> None:
     """
     Display package information and supported underlyings.
