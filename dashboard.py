@@ -5,7 +5,7 @@ This file runs a web-based (Plotly Dash) dashboard for
 scanning and analyzing iron condor opportunities.
 
 To run:
-    python dashboard.py
+    python3 dashboard.py
 
 Author: Carlos Landeros
 """
@@ -75,7 +75,7 @@ table_style_cell = {
 
 # --- App Layout ---
 app.layout = dbc.Container([
-    
+
     # --- Header ---
     dbc.Row(
         dbc.Col(
@@ -83,7 +83,7 @@ app.layout = dbc.Container([
             width=12
         )
     ),
-    
+
     # --- Controls Row ---
     dbc.Row([
         # Scan parameters
@@ -92,17 +92,17 @@ app.layout = dbc.Container([
             dbc.Label("Target DTE:"),
             dbc.Input(id='input-dte', type='number', value=45)
         ], width=3),
-        
+
         dbc.Col([
             dbc.Label("Target Delta:"),
             dbc.Input(id='input-delta', type='number', value=0.16, step=0.01)
         ], width=3),
-        
+
         dbc.Col([
             dbc.Label("Min Credit ($):"),
             dbc.Input(id='input-credit', type='number', value=2.0, step=0.1)
         ], width=3),
-        
+
         # The Scan Button
         dbc.Col([
             dbc.Button(
@@ -113,12 +113,12 @@ app.layout = dbc.Container([
                 style={"marginTop": "32px"}
             )
         ], width=3)
-        
+
     ], className="mb-4"),
-    
+
     # --- Output Area (Table and Graph) ---
     dbc.Row([
-        
+
         # Left Column: Results Table
         dbc.Col([
             html.H4("Optimal Candidates (Top 10 per Index)"),
@@ -151,7 +151,7 @@ app.layout = dbc.Container([
                 ]
             )
         ], width=7),
-        
+
         # Right Column: Payoff Graph
         dbc.Col([
             html.H4("Payoff Diagram"),
@@ -166,13 +166,13 @@ app.layout = dbc.Container([
                 ]
             )
         ], width=5)
-        
+
     ], className="mt-4"),
-    
+
     # --- Hidden Data Stores ---
     # Store the full scan results (JSON)
     dcc.Store(id='store-scan-results', data=[])
-    
+
 ], fluid=True, className="dbc") # Apply dark theme context
 
 
@@ -195,12 +195,12 @@ def update_scan_results(n_clicks, dte, delta, credit):
     # Lazy-load the backend here to prevent startup crashes
     from landeros_ironware.config import Settings
     from landeros_ironware.strategies import IronCondorScanner
-    
+
     SUPPORTED_UNDERLYINGS = ['SPX', 'NDX', 'RUT']
     all_candidates = []
-    
+
     logger.info(f"Multi-index scan triggered for {SUPPORTED_UNDERLYINGS} @ {dte} DTE...")
-    
+
     for underlying in SUPPORTED_UNDERLYINGS:
         logger.info(f"Scanning {underlying}...")
         try:
@@ -211,38 +211,38 @@ def update_scan_results(n_clicks, dte, delta, credit):
                 target_delta=delta,
                 min_credit=credit
             )
-            
+
             # 2. Run our powerful backend scanner
             scanner = IronCondorScanner(settings)
             candidates = scanner.scan() # This might take 5-10 seconds
-            
+
             if not candidates:
                 logger.warning(f"No candidates found for {underlying}.")
                 continue
-            
+
             # 3. Get Top 10 for this index and add to list
             # The scanner already sorts by score
             top_10 = [ic.to_dict() for ic in candidates[:10]]
             all_candidates.extend(top_10)
-            
+
         except Exception as e:
             logger.error(f"Failed to scan {underlying}: {e}")
             return [], f"Error scanning {underlying}. See terminal for details."
 
-    
+
     if not all_candidates:
         logger.warning("Multi-index scan complete. No candidates found for any index.")
         return [], "Scan complete. No candidates found."
-    
+
     logger.info(f"Multi-index scan complete. Found {len(all_candidates)} total top candidates.")
-    
+
     return all_candidates, f"Scan complete. Found {len(all_candidates)} candidates from {len(SUPPORTED_UNDERLYINGS)} indexes."
 
 
 @callback(
     Output('results-table', 'data'),
     Input('store-scan-results', 'data'),
-    prevent_initial_call=True # This was the bug Claude found
+    prevent_initial_call=True # Prevent running on load
 )
 def update_results_table(scan_results_json):
     """
@@ -253,7 +253,7 @@ def update_results_table(scan_results_json):
 
     if not scan_results_json:
         return []
-    
+
     # Format the data for the table
     table_data = []
     for ic_dict in scan_results_json:
@@ -268,10 +268,10 @@ def update_results_table(scan_results_json):
             "roc": f"{ic.return_on_capital:.1%}",
             "score": f"{ic.score:.3f}"
         })
-        
+
     # Re-sort data by score, as we combined 3 lists
     table_data.sort(key=lambda x: x['score'], reverse=True)
-    
+
     return table_data
 
 
@@ -292,23 +292,11 @@ def update_payoff_graph(active_cell, scan_results_json):
 
     if not active_cell or not scan_results_json:
         return dash.no_update
-    
+
     # Find the selected row's data.
-    # Note: `active_cell` refers to the *visual* row index,
-    # but we need the original data index from the JSON store.
-    # This is complex. Let's find the matching dict.
-    
-    # `active_cell` gives us row, col. We need the data from that row.
-    # `data` in the callback `State` is the *full* data set.
-    # We must find the *original* dict that corresponds to the clicked row.
-    
-    # This is a hack. `scan_results_json` is not sorted, but the
-    # `update_results_table` *returns* sorted data.
-    # This means the `active_cell` index won't match the `scan_results_json` index.
-    
-    # Let's re-build the table data and sort it, just like the previous callback.
-    # This is slightly inefficient but ensures our index is correct.
-    
+    # We must re-build the sorted list to find the correct
+    # data from the original store, as the visual table is sorted.
+
     table_data = []
     for ic_dict in scan_results_json:
         ic = IronCondor.from_dict(ic_dict) # Re-create object
@@ -318,7 +306,6 @@ def update_payoff_graph(active_cell, scan_results_json):
         })
     table_data.sort(key=lambda x: x['score'], reverse=True)
 
-    # Now get the correct dict using the visual row index
     try:
         selected_row_index = active_cell['row']
         selected_ic_dict = table_data[selected_row_index]['original_dict']
@@ -326,16 +313,16 @@ def update_payoff_graph(active_cell, scan_results_json):
         logger.error(f"Failed to find selected row {selected_row_index}: {e}")
         return dash.no_update
 
-    
+
     # Re-create the IronCondor object
     ic = IronCondor.from_dict(selected_ic_dict)
-    
+
     logger.info(f"Generating payoff graph for: {ic}")
-    
+
     # Use our existing PayoffDiagram class
     diagram = PayoffDiagram(ic)
     fig = diagram.plot(show_greeks=True) # Generate the Plotly figure
-    
+
     # Update figure for dark mode
     fig.update_layout(
         template="plotly_dark",
@@ -343,7 +330,7 @@ def update_payoff_graph(active_cell, scan_results_json):
         plot_bgcolor="rgb(50, 50, 50)",
         font_color="white"
     )
-    
+
     return fig
 
 
